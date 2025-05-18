@@ -1,6 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import ComHome from '../components/Home.vue';
-import ComLogin from '../components/LoginUser.vue'
+import ComLogin from '../components/Login.vue'
 
 const routes = [
     { path: '/', component: ComHome },

@@ -1,6 +1,7 @@
 export default function usePageRequests() {
   const makePostRequest = async (url, body, headers = {}) => {
     const accessToken = localStorage.getItem("jwt_token");
+    const apiUrl = import.meta.env.VITE_API_URL;
 
     const options = {
       method: "POST",
@@ -13,7 +14,7 @@ export default function usePageRequests() {
     };
 
     try {
-      const response = await fetch(url, options);
+      const response = await fetch(`${apiUrl}${url}`, options);
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -23,7 +24,6 @@ export default function usePageRequests() {
           errorData.message === "UnauthorizedException"
         ) {
           localStorage.removeItem("jwt_token");
-          window.location.href = "/login";
           return { status: "error" };
         }
 

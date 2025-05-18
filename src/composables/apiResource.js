@@ -1,21 +1,31 @@
-import usePageRequests from "./usePageRequests.js";
-
-const apiUrl = import.meta.env.VITE_API_URL;
+import { signInWithEmailAndPassword } from "firebase/auth";
+import { auth } from "../auth/firebase.js";
+import usePageRequests from "../composables/usePageRequests.js";
 
 export default function apiResource() {
   const { makePostRequest } = usePageRequests();
 
   const auth_login = async (data) => {
     try {
-      const response = await makePostRequest(`${apiUrl}/auth/login`, data);
+      const userCredential = await signInWithEmailAndPassword(
+        auth,
+        data.username,
+        data.password
+      );
+      const firebaseUser = userCredential.user;
+      const token = await firebaseUser.getIdToken();
 
-      if (response?.access_token) {
-        localStorage.setItem("jwt_token", response.access_token);
-      }
+      localStorage.setItem("jwt_token", token);
 
-      return response;
+      return {
+        access_token: token,
+        user: {
+          email: firebaseUser.email,
+          uid: firebaseUser.uid,
+        },
+      };
     } catch (error) {
-      console.error("Lỗi khi gọi API:", error);
+      console.error("Lỗi đăng nhập Firebase:", error.message);
       return {
         status: "error",
         message: "Đăng nhập thất bại. Vui lòng thử lại.",
@@ -23,9 +33,8 @@ export default function apiResource() {
     }
   };
 
-
-
   return {
     auth_login,
+    makePostRequest, // giữ nếu cần gọi API khác
   };
 }
