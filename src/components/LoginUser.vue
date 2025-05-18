@@ -1,69 +1,65 @@
 <template>
-    <div class="container">
-        <form @submit.prevent="handleLogin" class="login-form">
-            <h2 class="title">Đăng nhập</h2>
-
-            <!-- Hiển thị thông báo lỗi hoặc thành công -->
-            <p v-if="error" class="error-message">{{ error }}</p>
-            <p v-else-if="message" class="success-message">{{ message }}</p>
-
-            <div class="input-group">
-                <label for="email">Email</label>
-                <input id="email" v-model="email" type="email" placeholder="Email" required class="input-field" />
-            </div>
-
-            <div class="input-group">
-                <label for="password">Mật khẩu</label>
-                <input id="password" v-model="password" type="password" placeholder="Password" required
-                    class="input-field" />
-            </div>
-
-                <button type="submit" class="btn-submit w-full">Đăng nhập</button>
-                <button type="button" @click="backToHome"
-                    class="w-full bg-gray-300 text-gray-800 font-bold py-3 rounded hover:bg-gray-400 transition">
-                    Quay lại
-                </button>
-
-        </form>
-    </div>
+  <form class="text-center max-w-sm mx-auto" @submit.prevent="handleLogin">
+    <input
+      v-model="user.username"
+      placeholder="Tên đăng nhập"
+      class="border border-gray-300 rounded px-4 py-2 mb-4 w-full"
+    />
+    <input
+      v-model="user.password"
+      type="password"
+      placeholder="Mật khẩu"
+      class="border border-gray-300 rounded px-4 py-2 mb-4 w-full"
+    />
+    
+    <p v-if="log" class="text-red-500 text-sm mb-4">{{ log }}</p>
+    
+    <button
+      type="submit"
+      class="px-6 py-3 bg-accent text-white rounded-lg shadow-md hover:bg-yellow-500 transition w-full"
+    >
+      Đăng nhập
+    </button>
+  </form>
 </template>
 
 <script setup>
-import { ref } from "vue";
-import { useRouter } from "vue-router"; 
-import { auth } from "../auth/firebase";
-import { signInWithEmailAndPassword } from "firebase/auth";
+import { reactive, ref } from 'vue';
+import VueJwtDecode from 'vue-jwt-decode';
+import apiResource from '../composables/apiResource';
 
-const email = ref("");
-const password = ref("");
-const error = ref("");
-const message = ref("");
+// API từ composable
+const { auth_login } = apiResource();
 
-const router = useRouter();
+// Khai báo dữ liệu người dùng
+const user = reactive({
+  username: '',
+  password: '',
+});
 
-function backToHome() {
-    router.push("/");
-}
+// Thông báo phản hồi
+const log = ref('');
 
-async function handleLogin() {
-    error.value = "";
-    message.value = "";
-    try {
-        const userCredential = await signInWithEmailAndPassword(
-            auth,
-            email.value,
-            password.value
-        );
-        const user = userCredential.user;
+const handleLogin = async () => {
+  try {
+    const response = await auth_login(user);
 
-        const token = await user.getIdToken();
-        localStorage.setItem("jwt_token", token);
+    if (response.access_token) {
+      localStorage.setItem('access_token', response.access_token);
 
-        message.value = "Đăng nhập thành công!";
-    } catch (e) {
-        error.value = "Đăng nhập thất bại: " + e.message;
+      const token = localStorage.getItem('access_token');
+      const decodedToken = VueJwtDecode.decode(token);
+
+      // Hiển thị payload từ JWT
+      log.value = `Xin chào, ${decodedToken.username || 'người dùng'}!`;
+    } else {
+      log.value = 'Thông tin đăng nhập không đúng.';
     }
-}
+  } catch (error) {
+    console.error('Login failed', error);
+    log.value = 'Đăng nhập thất bại. Vui lòng thử lại.';
+  }
+};
 </script>
 
 
